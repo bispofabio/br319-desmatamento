@@ -55,21 +55,34 @@ body { margin: 0; padding: 0; font-family: sans-serif; }
 
 <div id="map"></div>
 
-<!-- Legenda no canto inferior direito -->
+<!-- Legenda -->
 <div class="legend">
-    <div class="legend-item"><span class="legend-color" style="background: #c4ab0e;"></span> BR-319</div><div class="legend-item"><span class="legend-color" style="background: #11730c;"></span> Terras Indígenas</div>
+    <div class="legend-item"><span class="legend-color" style="background: #c4ab0e;"></span> BR-319</div>
+    <div class="legend-item"><span class="legend-color" style="background: #11730c;"></span> Terras Indígenas</div>
     <div class="legend-item"><span class="legend-color" style="background: #a7d2cb;"></span> Unidades de Conservação</div>
-        <div class="legend-item"><span class="legend-color" style="background: #ffffff; border: 1px solid #999;"></span> Entorno (50km)</div>
+    <div class="legend-item"><span class="legend-color" style="background: #ffffff; border: 1px solid #999;"></span> Entorno (50km)</div>
 </div>
 
-<!-- Slider centralizado e estilizado -->
+<!-- Slider -->
 <div class="slider-container">
     <div>
-        <strong id="year-label">2008</strong> — <span id="desmatamento-ano">13.765 ha</span>
+        <strong id="year-label">2024</strong> — <span id="desmatamento-ano">13.727 ha</span>
     </div>
     <input id="year-slider" type="range" min="2008" max="2024" step="1" value="2024">
     <p style="margin-top: 8px; font-size: 13px; color: #ddd;">Deslize para ver a evolução do desmatamento na BR-319</p>
+</div>
 
+<!-- Botões de zoom e tela cheia -->
+<div style="position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-direction: column;">
+    <button onclick="map.zoomIn()" title="Zoom In"
+    style="margin-bottom: 5px; background: rgba(255,255,255,0.8); border: none; border-radius: 4px;
+    width: 32px; height: 32px; font-size: 18px; cursor: pointer;">+</button>
+    <button onclick="map.zoomOut()" title="Zoom Out"
+    style="margin-bottom: 5px; background: rgba(255,255,255,0.8); border: none; border-radius: 4px;
+    width: 32px; height: 32px; font-size: 18px; cursor: pointer;">−</button>
+    <button onclick="toggleFullscreen()" title="Tela cheia"
+    style="background: rgba(255,255,255,0.8); border: none; border-radius: 4px;
+    width: 32px; height: 32px; font-size: 16px; cursor: pointer;">⛶</button>
 </div>
 
 <script>
@@ -100,7 +113,9 @@ const map = new mapboxgl.Map({
     style: 'mapbox://styles/infoamazonia/cmbh7tmjd00es01s17jfj0so9',
     projection: 'winkelTripel',
     center: [-63.9, -7.4],
-    zoom: 6
+    zoom: 6,
+    minZoom: 4,
+    maxZoom: 14
 });
 
 function filterByYearAcumulative(year) {
@@ -112,24 +127,36 @@ function filterByYearAcumulative(year) {
     document.getElementById('desmatamento-ano').textContent = formatado;
 }
 
+function toggleFullscreen() {
+    const mapEl = document.getElementById('map');
+    if (!document.fullscreenElement) {
+        mapEl.requestFullscreen().catch(err => {
+            alert(`Erro ao entrar em tela cheia: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+
 map.on('load', () => {
-    // Desmatamento acumulado
+    // Tileset do Mapbox
     map.addSource('desmatamento', {
-        type: 'geojson',
-        data: 'desmatamento_buffer_319_2008_2024.geojson'
+    type: 'geojson',
+    data: 'https://raw.githubusercontent.com/bispofabio/br319-desmatamento/refs/heads/main/simplydesmatamento_buffer_319_2008_2024.json'
     });
 
     map.addLayer({
-        id: 'desmatamento-layer',
-        type: 'fill',
-        source: 'desmatamento',
-        paint: {
-            'fill-color': '#f03b20',
-            'fill-opacity': 0.6
-        }
+    id: 'desmatamento-layer',
+    type: 'fill',
+    source: 'desmatamento',
+    paint: {
+        'fill-color': '#f03b20',
+        'fill-opacity': 0.6
+    }
     });
 
-    // Labels das capitais
+
+    // Capitais
     map.addSource('capitais', {
         type: 'geojson',
         data: {
@@ -137,23 +164,13 @@ map.on('load', () => {
             features: [
                 {
                     type: 'Feature',
-                    geometry: {
-                        type: 'Point',
-                        coordinates: [-60.025, -3.101] // Manaus
-                    },
-                    properties: {
-                        nome: 'Manaus'
-                    }
+                    geometry: { type: 'Point', coordinates: [-60.025, -3.101] },
+                    properties: { nome: 'Manaus' }
                 },
                 {
                     type: 'Feature',
-                    geometry: {
-                        type: 'Point',
-                        coordinates: [-63.9039, -8.7611] // Porto Velho
-                    },
-                    properties: {
-                        nome: 'Porto Velho'
-                    }
+                    geometry: { type: 'Point', coordinates: [-63.9039, -8.7611] },
+                    properties: { nome: 'Porto Velho' }
                 }
             ]
         }
@@ -177,7 +194,6 @@ map.on('load', () => {
         }
     });
 
-    // Inicializa com 2024
     filterByYearAcumulative(2024);
 
     document.getElementById('year-slider').addEventListener('input', (e) => {
@@ -185,32 +201,7 @@ map.on('load', () => {
         filterByYearAcumulative(year);
     });
 });
-function toggleFullscreen() {
-    const mapEl = document.getElementById('map');
-    if (!document.fullscreenElement) {
-        mapEl.requestFullscreen().catch(err => {
-            alert(`Erro ao entrar em tela cheia: ${err.message}`);
-        });
-    } else {
-        document.exitFullscreen();
-    }
-}
-
 </script>
-<!-- Botões de zoom -->
-<!-- Botões de zoom e tela cheia -->
-<div style="position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-direction: column;">
-<button onclick="map.zoomIn()" title="Zoom In"
-style="margin-bottom: 5px; background: rgba(255,255,255,0.8); border: none; border-radius: 4px;
-width: 32px; height: 32px; font-size: 18px; cursor: pointer;">+</button>
-<button onclick="map.zoomOut()" title="Zoom Out"
-style="margin-bottom: 5px; background: rgba(255,255,255,0.8); border: none; border-radius: 4px;
-width: 32px; height: 32px; font-size: 18px; cursor: pointer;">−</button>
-<button onclick="toggleFullscreen()" title="Tela cheia"
-style="background: rgba(255,255,255,0.8); border: none; border-radius: 4px;
-width: 32px; height: 32px; font-size: 16px; cursor: pointer;">⛶</button>
-</div>
-
 
 </body>
 </html>
